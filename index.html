@@ -12,76 +12,106 @@
       direction: rtl;
       text-align: right;
     }
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 0.25rem;
-    }
-    p {
-      color: #555;
-    }
-    #pdf-list {
-      margin-top: 1.5rem;
-    }
-    .pdf-item {
-      margin: 0.4rem 0;
-    }
-    .pdf-link {
-      text-decoration: none;
+    h1 { margin-bottom: 0.5rem; }
+    h2 { margin-top: 2rem; }
+    .pdf-item { margin: 0.3rem 0; }
+    a {
       color: #1574f6;
+      text-decoration: none;
       font-size: 1.05rem;
     }
-    .pdf-link:hover {
-      text-decoration: underline;
-    }
+    a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
 
-  <h1>Yoav's Physics PDFs</h1>
-  <p>רשימה אוטומטית של כל קבצי ה-PDF בריפוזיטורי.</p>
+<h1>Yoav's Physics PDFs</h1>
+<p>רשימת תיקיות וקבצים נטענת אוטומטית מהריפו.</p>
 
-  <div id="pdf-list">טוען קבצים…</div>
+<div id="content">טוען…</div>
 
-  <script>
-    async function loadPdfs() {
-      const owner = "YoavsPhysicsNotes";
-      const repo = "pdf-storage";
-      const api = `https://api.github.com/repos/${owner}/${repo}/contents`;
+<script>
+  const owner = "YoavsPhysicsNotes";
+  const repo = "pdf-storage";
 
-      const container = document.getElementById("pdf-list");
+  async function getContents(path = "") {
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    return await res.json();
+  }
 
-      try {
-        const res = await fetch(api);
-        const data = await res.json();
+  function isPdf(file) {
+    return file.type === "file" && file.name.toLowerCase().endsWith(".pdf");
+  }
 
-        const pdfs = data.filter(f => f.name.toLowerCase().endsWith(".pdf"));
+  function isDir(item) {
+    return item.type === "dir";
+  }
 
-        if (pdfs.length === 0) {
-          container.textContent = "אין עדיין קבצי PDF.";
-          return;
-        }
+  async function load() {
+    const container = document.getElementById("content");
+    container.innerHTML = "";
 
-        container.innerHTML = "";
-        pdfs.forEach(f => {
-          const div = document.createElement("div");
-          div.className = "pdf-item";
+    // שלב 1: קבל את כל האייטמים בשורש
+    const rootItems = await getContents("");
 
-          const a = document.createElement("a");
-          a.className = "pdf-link";
-          a.href = f.download_url;
-          a.target = "_blank";
-          a.textContent = f.name.replace(/\.pdf$/i, "");
+    // שלב 2: קבצים PDF בשורש (במידה ויש)
+    const rootPdfs = rootItems.filter(isPdf);
+    if (rootPdfs.length > 0) {
+      const h2 = document.createElement("h2");
+      h2.textContent = "קבצים כלליים";
+      container.appendChild(h2);
 
-          div.appendChild(a);
-          container.appendChild(div);
-        });
-      } catch (err) {
-        container.textContent = "שגיאה בטעינת הקבצים.";
-      }
+      rootPdfs.forEach(f => {
+        const div = document.createElement("div");
+        div.className = "pdf-item";
+
+        const a = document.createElement("a");
+        a.href = f.download_url;
+        a.target = "_blank";
+        a.textContent = f.name.replace(/\.pdf$/i, "");
+
+        div.appendChild(a);
+        container.appendChild(div);
+      });
     }
 
-    loadPdfs();
-  </script>
+    // שלב 3: מצא תיקיות
+    const dirs = rootItems.filter(isDir);
+
+    for (const dir of dirs) {
+      const dirName = dir.name;
+      const files = await getContents(dir.path);
+      const pdfs = files.filter(isPdf);
+
+      if (pdfs.length === 0) continue; // דלג על תיקיות ריקות
+
+      const h2 = document.createElement("h2");
+      h2.textContent = dirName;
+      container.appendChild(h2);
+
+      pdfs.forEach(f => {
+        const div = document.createElement("div");
+        div.className = "pdf-item";
+
+        const a = document.createElement("a");
+        a.href = f.download_url;
+        a.target = "_blank";
+        a.textContent = f.name.replace(/\.pdf$/i, "");
+
+        div.appendChild(a);
+        container.appendChild(div);
+      });
+    }
+
+    if (!container.innerHTML.trim()) {
+      container.textContent = "אין עדיין קבצים או תיקיות.";
+    }
+  }
+
+  load();
+</script>
 
 </body>
 </html>
