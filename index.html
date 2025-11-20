@@ -2,7 +2,7 @@
 <html lang="he">
 <head>
   <meta charset="UTF-8">
-  <title>Yoav's Physics PDFs</title>
+  <title>Yoav's Physics Notes</title>
 
   <style>
     body {
@@ -12,7 +12,8 @@
       padding: 0 16px;
       direction: rtl;
       text-align: right;
-      background: #f9fafb;
+      background: #111; 
+      color: #fff;
     }
 
     .logo-wrap {
@@ -22,17 +23,13 @@
     }
 
     .logo-wrap img {
-      max-height: 80px;
-    }
-
-    h1 {
-      font-size: 1.4rem;
-      margin-bottom: 1rem;
+      max-height: 90px;
+      border-radius: 6px;
     }
 
     details {
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
+      background: #1a1a1a;
+      border: 1px solid #333;
       border-radius: 10px;
       padding: 0.4rem 0.8rem 0.6rem;
       margin-bottom: 0.6rem;
@@ -43,131 +40,145 @@
       cursor: pointer;
       list-style: none;
       outline: none;
+      font-size: 1rem;
     }
 
     summary::-webkit-details-marker {
       display: none;
     }
 
+    /* חץ RTL — סגור: שמאלה, פתוח: למטה */
     summary::before {
       content: "▸";
       display: inline-block;
       margin-left: 6px;
+      transform: rotate(180deg); /* מצב סגור – שמאלה */
       transition: transform 0.15s ease-out;
+      color: #ccc;
     }
 
     details[open] summary::before {
-      transform: rotate(90deg);
-    }
-
-    .pdf-link {
-      text-decoration: none;
-      color: #2563eb;
-      font-size: 0.98rem;
-    }
-
-    .pdf-link:hover {
-      text-decoration: underline;
+      transform: rotate(90deg); /* מצב פתוח – למטה */
     }
 
     .pdf-item {
       margin: 0.25rem 0;
       padding-right: 1.2rem;
     }
+
+    .pdf-link {
+      text-decoration: none;
+      color: #6aa6ff;
+      font-size: 0.96rem;
+    }
+
+    .pdf-link:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
+
 <body>
 
   <div class="logo-wrap">
-    <!-- עדכן את השם אם התמונה לא נקראת logo.png -->
     <img src="logo.png" alt="Yoav's Physics Notes">
   </div>
 
-  <h1>Yoav's Physics PDFs</h1>
   <div id="content">טוען…</div>
 
-  <script>
-    const owner = "YoavsPhysicsNotes";
-    const repo  = "pdf-storage";
-    const proxy = "https://api.allorigins.win/raw?url=";
+<script>
+const owner = "YoavsPhysicsNotes";
+const repo  = "pdf-storage";
+const proxy = "https://api.allorigins.win/raw?url=";
 
-    async function get(path = "") {
-      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-      const res = await fetch(proxy + encodeURIComponent(url));
-      return res.ok ? await res.json() : [];
-    }
+async function get(path = "") {
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+  const res = await fetch(proxy + encodeURIComponent(url));
+  return res.ok ? await res.json() : [];
+}
 
-    function isPdf(f) { return f.type === "file" && f.name.toLowerCase().endsWith(".pdf"); }
-    function isDir(f) { return f.type === "dir"; }
+function isPdf(f) { return f.type === "file" && f.name.toLowerCase().endsWith(".pdf"); }
+function isDir(f) { return f.type === "dir"; }
 
-    async function load() {
-      const container = document.getElementById("content");
-      container.innerHTML = "";
+/* רינדור תיקייה עם עומק בלתי מוגבל */
+async function renderFolder(path, name) {
+  const det = document.createElement("details");
+  const sum = document.createElement("summary");
+  sum.textContent = name;
+  det.appendChild(sum);
 
-      const rootItems = await get("");
-      const dirs = rootItems.filter(isDir);
-      const rootPdfs = rootItems.filter(isPdf);
+  const items = await get(path);
+  const dirs  = items.filter(isDir);
+  const pdfs  = items.filter(isPdf);
 
-      // קבצים כלליים (לא בתיקייה)
-      if (rootPdfs.length > 0) {
-        const det = document.createElement("details");
-        det.open = true;
+  /* קבצי PDF בתיקייה */
+  pdfs.forEach(f => {
+    const div = document.createElement("div");
+    div.className = "pdf-item";
 
-        const sum = document.createElement("summary");
-        sum.textContent = "קבצים כלליים";
-        det.appendChild(sum);
+    const a = document.createElement("a");
+    a.className = "pdf-link";
+    a.href = f.download_url;
+    a.target = "_blank";
+    a.textContent = f.name.replace(/\.pdf$/i, "");
 
-        rootPdfs.forEach(f => {
-          const div = document.createElement("div");
-          div.className = "pdf-item";
+    div.appendChild(a);
+    det.appendChild(div);
+  });
 
-          const a = document.createElement("a");
-          a.className = "pdf-link";
-          a.href = f.download_url;
-          a.target = "_blank";
-          a.textContent = f.name.replace(/\.pdf$/i, "");
+  /* תתי־תיקיות (קריאה רקורסיבית) */
+  for (const d of dirs) {
+    const sub = await renderFolder(d.path, d.name);
+    sub.style.marginRight = "1rem";
+    det.appendChild(sub);
+  }
 
-          div.appendChild(a);
-          det.appendChild(div);
-        });
+  return det;
+}
 
-        container.appendChild(det);
-      }
+async function load() {
+  const container = document.getElementById("content");
+  container.innerHTML = "";
 
-      // תיקיות
-      for (const d of dirs) {
-        const files = await get(d.path);
-        const pdfs = files.filter(isPdf);
-        if (!pdfs.length) continue;
+  const root = await get("");
+  const dirs = root.filter(isDir);
+  const rootPdfs = root.filter(isPdf);
 
-        const det = document.createElement("details");
-        const sum = document.createElement("summary");
-        sum.textContent = d.name; // שם התיקייה כמו שהוא
-        det.appendChild(sum);
+  /* קבצים כלליים */
+  if (rootPdfs.length > 0) {
+    const gen = document.createElement("details");
+    gen.open = true;
 
-        pdfs.forEach(f => {
-          const div = document.createElement("div");
-          div.className = "pdf-item";
+    const sum = document.createElement("summary");
+    sum.textContent = "קבצים כלליים";
+    gen.appendChild(sum);
 
-          const a = document.createElement("a");
-          a.className = "pdf-link";
-          a.href = f.download_url;
-          a.target = "_blank";
-          a.textContent = f.name.replace(/\.pdf$/i, "");
+    rootPdfs.forEach(f => {
+      const div = document.createElement("div");
+      div.className = "pdf-item";
 
-          div.appendChild(a);
-          det.appendChild(div);
-        });
+      const a = document.createElement("a");
+      a.className = "pdf-link";
+      a.href = f.download_url;
+      a.target = "_blank";
+      a.textContent = f.name.replace(/\.pdf$/i, "");
 
-        container.appendChild(det);
-      }
+      div.appendChild(a);
+      gen.appendChild(div);
+    });
 
-      if (!container.innerHTML.trim()) {
-        container.textContent = "אין עדיין קבצים.";
-      }
-    }
+    container.appendChild(gen);
+  }
 
-    load();
-  </script>
+  /* תיקיות ברמה הראשונה */
+  for (const d of dirs) {
+    const block = await renderFolder(d.path, d.name);
+    container.appendChild(block);
+  }
+
+}
+load();
+
+</script>
 </body>
 </html>
