@@ -2,44 +2,95 @@
 <html lang="he">
 <head>
   <meta charset="UTF-8">
-  <title>Yoav's Physics PDFs</title>
+  <title>Yoav's Physics Notes</title>
 
   <style>
     body {
       font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-      max-width: 850px;
-      margin: 40px auto;
-      padding: 0 1.2rem;
+      margin: 0;
+      background: #f9fafb;
       direction: rtl;
       text-align: right;
-      background: #f9fafb;
     }
 
-    h1 {
-      font-size: 2.2rem;
-      font-weight: 700;
+    .shell {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    /* header + logo + menu */
+
+    .site-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .site-logo img {
+      max-height: 80px;
+      display: block;
+    }
+
+    .main-nav ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      gap: 32px;
+      font-size: 0.95rem;
       color: #111827;
-      margin-bottom: 1rem;
+    }
+
+    .main-nav li {
+      cursor: pointer;
+      position: relative;
+    }
+
+    .main-nav li::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: -4px;
+      width: 0;
+      height: 1.5px;
+      background: #111827;
+      transition: width 0.18s ease-out;
+    }
+
+    .main-nav li:hover::after {
+      width: 100%;
+    }
+
+    /* content */
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #111827;
+      margin: 0 0 12px;
     }
 
     .folder-block {
       background: #ffffff;
-      padding: 1.2rem 1.4rem;
+      padding: 1.1rem 1.3rem;
       border-radius: 12px;
-      margin-bottom: 1.2rem;
+      margin-bottom: 1rem;
       box-shadow: 0 2px 4px rgba(0,0,0,0.06);
       border: 1px solid #e5e7eb;
     }
 
     .folder-title {
-      font-size: 1.4rem;
+      font-size: 1.2rem;
       font-weight: 600;
-      margin-bottom: 0.8rem;
+      margin-bottom: 0.6rem;
       color: #1f2937;
     }
 
     .pdf-item {
-      margin: 0.35rem 0;
+      margin: 0.3rem 0;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -57,116 +108,134 @@
     .pdf-link {
       text-decoration: none;
       color: #2563eb;
-      font-size: 1.05rem;
+      font-size: 1.02rem;
     }
 
     .pdf-link:hover {
       text-decoration: underline;
     }
   </style>
-
 </head>
 <body>
+  <div class="shell">
 
-<h1>Yoav's Physics PDFs</h1>
-<div id="content">טוען…</div>
+    <header class="site-header">
+      <div class="site-logo">
+        <!-- עדכן לשם הקובץ האמיתי -->
+        <img src="logo.png" alt="Yoav's Physics Notes">
+      </div>
+      <nav class="main-nav">
+        <ul>
+          <li>קורסי פיזיקה ▾</li>
+          <li>קורסי מתמטיקה ▾</li>
+          <li>בקשות</li>
+          <li>אודות</li>
+        </ul>
+      </nav>
+    </header>
 
-<script>
-const owner = "YoavsPhysicsNotes";
-const repo  = "pdf-storage";
-const proxy = "https://api.allorigins.win/raw?url=";
+    <main>
+      <h1>קבצי PDF</h1>
+      <div id="content">טוען…</div>
+    </main>
 
-async function get(path="") {
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-  const res = await fetch(proxy + encodeURIComponent(url));
-  return res.ok ? await res.json() : [];
-}
+  </div>
 
-function isPdf(f)  { return f.type === "file" && f.name.toLowerCase().endsWith(".pdf"); }
-function isDir(f)  { return f.type === "dir"; }
+  <script>
+  const owner = "YoavsPhysicsNotes";
+  const repo  = "pdf-storage";
+  const proxy = "https://api.allorigins.win/raw?url=";
 
-async function load() {
-  const container = document.getElementById("content");
-  container.innerHTML = "";
-
-  const rootItems = await get("");
-  const dirs = rootItems.filter(isDir);
-  const rootPdfs = rootItems.filter(isPdf);
-
-  // --- קבצים ללא תיקייה ---
-  if (rootPdfs.length > 0) {
-    const block = document.createElement("div");
-    block.className = "folder-block";
-
-    const title = document.createElement("div");
-    title.className = "folder-title";
-    title.textContent = "קבצים כלליים";
-    block.appendChild(title);
-
-    rootPdfs.forEach(f => {
-      const item = document.createElement("div");
-      item.className = "pdf-item";
-
-      const icon = document.createElement("span");
-      icon.className = "pdf-icon";
-
-      const a = document.createElement("a");
-      a.className = "pdf-link";
-      a.href = f.download_url;
-      a.target = "_blank";
-      a.textContent = f.name.replace(/\.pdf$/i, "");
-
-      item.appendChild(icon);
-      item.appendChild(a);
-      block.appendChild(item);
-    });
-
-    container.appendChild(block);
+  async function get(path="") {
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+    const res = await fetch(proxy + encodeURIComponent(url));
+    return res.ok ? await res.json() : [];
   }
 
-  // --- תיקיות ---
-  for (const d of dirs) {
-    const files = await get(d.path);
-    const pdfs = files.filter(isPdf);
+  function isPdf(f)  { return f.type === "file" && f.name.toLowerCase().endsWith(".pdf"); }
+  function isDir(f)  { return f.type === "dir"; }
 
-    if (!pdfs.length) continue;
+  async function load() {
+    const container = document.getElementById("content");
+    container.innerHTML = "";
 
-    const block = document.createElement("div");
-    block.className = "folder-block";
+    const rootItems = await get("");
+    const dirs = rootItems.filter(isDir);
+    const rootPdfs = rootItems.filter(isPdf);
 
-    const title = document.createElement("div");
-    title.className = "folder-title";
-    title.textContent = d.name;
-    block.appendChild(title);
+    // קבצים ללא תיקייה
+    if (rootPdfs.length > 0) {
+      const block = document.createElement("div");
+      block.className = "folder-block";
 
-    pdfs.forEach(f => {
-      const item = document.createElement("div");
-      item.className = "pdf-item";
+      const title = document.createElement("div");
+      title.className = "folder-title";
+      title.textContent = "קבצים כלליים";
+      block.appendChild(title);
 
-      const icon = document.createElement("span");
-      icon.className = "pdf-icon";
+      rootPdfs.forEach(f => {
+        const item = document.createElement("div");
+        item.className = "pdf-item";
 
-      const a = document.createElement("a");
-      a.className = "pdf-link";
-      a.href = f.download_url;
-      a.target = "_blank";
-      a.textContent = f.name.replace(/\.pdf$/i, "");
+        const icon = document.createElement("span");
+        icon.className = "pdf-icon";
 
-      item.appendChild(icon);
-      item.appendChild(a);
-      block.appendChild(item);
-    });
+        const a = document.createElement("a");
+        a.className = "pdf-link";
+        a.href = f.download_url;
+        a.target = "_blank";
+        a.textContent = f.name.replace(/\.pdf$/i, "");
 
-    container.appendChild(block);
+        item.appendChild(icon);
+        item.appendChild(a);
+        block.appendChild(item);
+      });
+
+      container.appendChild(block);
+    }
+
+    // תיקיות
+    for (const d of dirs) {
+      const files = await get(d.path);
+      const pdfs = files.filter(isPdf);
+
+      if (!pdfs.length) continue;
+
+      const block = document.createElement("div");
+      block.className = "folder-block";
+
+      const title = document.createElement("div");
+      title.className = "folder-title";
+      title.textContent = d.name;
+      block.appendChild(title);
+
+      pdfs.forEach(f => {
+        const item = document.createElement("div");
+        item.className = "pdf-item";
+
+        const icon = document.createElement("span");
+        icon.className = "pdf-icon";
+
+        const a = document.createElement("a");
+        a.className = "pdf-link";
+        a.href = f.download_url;
+        a.target = "_blank";
+        a.textContent = f.name.replace(/\.pdf$/i, "");
+
+        item.appendChild(icon);
+        item.appendChild(a);
+        block.appendChild(item);
+      });
+
+      container.appendChild(block);
+    }
+
+    if (!container.innerHTML.trim()) {
+      container.textContent = "אין עדיין קבצים.";
+    }
   }
 
-  if (!container.innerHTML.trim()) {
-    container.textContent = "אין עדיין קבצים.";
-  }
-}
-
-load();
-</script>
-
+  load();
+  </script>
 </body>
 </html>
