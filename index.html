@@ -3,36 +3,170 @@
 <head>
   <meta charset="UTF-8">
   <title>Yoav's Physics PDFs</title>
+
   <style>
-    body{font-family:system-ui,-apple-system,"Segoe UI";max-width:800px;margin:40px auto;padding:0 16px;direction:rtl;text-align:right}
-    h1{margin-bottom:.5rem}h2{margin-top:2rem}
-    a{color:#1574f6;text-decoration:none}a:hover{text-decoration:underline}
+    body {
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+      max-width: 850px;
+      margin: 40px auto;
+      padding: 0 1.2rem;
+      direction: rtl;
+      text-align: right;
+      background: #f9fafb;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 1rem;
+    }
+
+    .folder-block {
+      background: #ffffff;
+      padding: 1.2rem 1.4rem;
+      border-radius: 12px;
+      margin-bottom: 1.2rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+      border: 1px solid #e5e7eb;
+    }
+
+    .folder-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 0.8rem;
+      color: #1f2937;
+    }
+
+    .pdf-item {
+      margin: 0.35rem 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pdf-icon {
+      width: 18px;
+      height: 18px;
+      background: #ef4444;
+      border-radius: 3px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .pdf-link {
+      text-decoration: none;
+      color: #2563eb;
+      font-size: 1.05rem;
+    }
+
+    .pdf-link:hover {
+      text-decoration: underline;
+    }
   </style>
+
 </head>
 <body>
+
 <h1>Yoav's Physics PDFs</h1>
 <div id="content">טוען…</div>
+
 <script>
-const owner="YoavsPhysicsNotes",repo="pdf-storage";
-const proxy="https://api.allorigins.win/raw?url=";
-async function get(path=""){const u=`https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-  const r=await fetch(proxy+encodeURIComponent(u));return r.ok?await r.json():[]}
-function isPdf(f){return f.type==="file"&&f.name.toLowerCase().endsWith(".pdf")}
-function isDir(f){return f.type==="dir"}
-async function load(){
- const c=document.getElementById("content");c.innerHTML="";
- const root=await get("");
- const dirs=root.filter(isDir),rootPdfs=root.filter(isPdf);
- if(rootPdfs.length){const h=document.createElement("h2");h.textContent="קבצים כלליים";c.appendChild(h);
-   rootPdfs.forEach(f=>{const a=document.createElement("a");a.href=f.download_url;a.target="_blank";
-     a.textContent=f.name.replace(/\.pdf$/i,"");c.appendChild(a);c.appendChild(document.createElement("br"));});}
- for(const d of dirs){const files=await get(d.path),pdfs=files.filter(isPdf);
-   if(!pdfs.length)continue;
-   const h=document.createElement("h2");h.textContent=d.name;c.appendChild(h);
-   pdfs.forEach(f=>{const a=document.createElement("a");a.href=f.download_url;a.target="_blank";
-     a.textContent=f.name.replace(/\.pdf$/i,"");c.appendChild(a);c.appendChild(document.createElement("br"));});}
- if(!c.innerHTML.trim())c.textContent="אין עדיין קבצים.";}
+const owner = "YoavsPhysicsNotes";
+const repo  = "pdf-storage";
+const proxy = "https://api.allorigins.win/raw?url=";
+
+async function get(path="") {
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+  const res = await fetch(proxy + encodeURIComponent(url));
+  return res.ok ? await res.json() : [];
+}
+
+function isPdf(f)  { return f.type === "file" && f.name.toLowerCase().endsWith(".pdf"); }
+function isDir(f)  { return f.type === "dir"; }
+
+async function load() {
+  const container = document.getElementById("content");
+  container.innerHTML = "";
+
+  const rootItems = await get("");
+  const dirs = rootItems.filter(isDir);
+  const rootPdfs = rootItems.filter(isPdf);
+
+  // --- קבצים ללא תיקייה ---
+  if (rootPdfs.length > 0) {
+    const block = document.createElement("div");
+    block.className = "folder-block";
+
+    const title = document.createElement("div");
+    title.className = "folder-title";
+    title.textContent = "קבצים כלליים";
+    block.appendChild(title);
+
+    rootPdfs.forEach(f => {
+      const item = document.createElement("div");
+      item.className = "pdf-item";
+
+      const icon = document.createElement("span");
+      icon.className = "pdf-icon";
+
+      const a = document.createElement("a");
+      a.className = "pdf-link";
+      a.href = f.download_url;
+      a.target = "_blank";
+      a.textContent = f.name.replace(/\.pdf$/i, "");
+
+      item.appendChild(icon);
+      item.appendChild(a);
+      block.appendChild(item);
+    });
+
+    container.appendChild(block);
+  }
+
+  // --- תיקיות ---
+  for (const d of dirs) {
+    const files = await get(d.path);
+    const pdfs = files.filter(isPdf);
+
+    if (!pdfs.length) continue;
+
+    const block = document.createElement("div");
+    block.className = "folder-block";
+
+    const title = document.createElement("div");
+    title.className = "folder-title";
+    title.textContent = d.name;
+    block.appendChild(title);
+
+    pdfs.forEach(f => {
+      const item = document.createElement("div");
+      item.className = "pdf-item";
+
+      const icon = document.createElement("span");
+      icon.className = "pdf-icon";
+
+      const a = document.createElement("a");
+      a.className = "pdf-link";
+      a.href = f.download_url;
+      a.target = "_blank";
+      a.textContent = f.name.replace(/\.pdf$/i, "");
+
+      item.appendChild(icon);
+      item.appendChild(a);
+      block.appendChild(item);
+    });
+
+    container.appendChild(block);
+  }
+
+  if (!container.innerHTML.trim()) {
+    container.textContent = "אין עדיין קבצים.";
+  }
+}
+
 load();
 </script>
+
 </body>
 </html>
